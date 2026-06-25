@@ -1,0 +1,74 @@
+name: Release
+
+# Manually triggered from the Actions tab. Pick the semver bump and this job
+# version-bumps, publishes to npm, pushes the tag and cuts a GitHub Release.
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: Semver bump to apply before publishing
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+# Never run two releases at once.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # push the version commit/tag and create the release
+  id-token: write # npm provenance (supply-chain attestation)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Falls back to GITHUB_TOKEN; set RELEASE_TOKEN (a PAT) if master is
+          # a protected branch the default token may not push to.
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - run: npm ci
+
+      # Quality gates — never publish a broken build.
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run lint
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        run: npm version ${{ inputs.release_type }} -m "Release v%s [skip ci]"
+
+      # Publish before pushing, so a missing/invalid NPM_TOKEN fails the run
+      # without leaving an unpublished version bump on master.
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push version commit and tag
+        run: git push --follow-tags
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+          gh release create "$VERSION" --title "$VERSION" --generate-notes
