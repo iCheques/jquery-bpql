@@ -1,9 +1,10 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, extname } from 'node:path';
 
+import typescript from '@rollup/plugin-typescript';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
+import { dts } from 'rollup-plugin-dts';
 import * as sass from 'sass';
 
 import pkg from './package.json' with { type: 'json' };
@@ -11,7 +12,7 @@ import pkg from './package.json' with { type: 'json' };
 const banner = `/*!
  * ${pkg.name} v${pkg.version}
  * ${pkg.description}
- * (c) ${pkg.author?.name || pkg.author} — ${pkg.license} License
+ * (c) ${pkg.author} — ${pkg.license} License
  * ${pkg.homepage}
  */`;
 
@@ -26,8 +27,7 @@ const MIME = {
 /**
  * Compile `.scss` imports with Dart Sass and inline every referenced image as a
  * base64 data URI, so the loader ships as a single self-contained string with
- * zero runtime asset requests. Replaces the legacy node-sass + postcss-base64
- * toolchain, which no longer builds on modern Node.
+ * zero runtime asset requests.
  */
 function scssInline() {
   return {
@@ -53,27 +53,38 @@ function scssInline() {
   };
 }
 
-const plugins = [scssInline(), nodeResolve(), commonjs()];
-
-const output = (file, format, extra = {}) => ({
-  file,
-  format,
+const external = ['jquery'];
+const globals = { jquery: 'jQuery' };
+const base = {
   name: 'jqueryBpql',
   exports: 'named',
   banner,
-  globals: { jquery: 'jQuery' },
+  globals,
   sourcemap: true,
-  ...extra,
-});
-
-export default {
-  input: 'src/index.js',
-  external: ['jquery'],
-  plugins,
-  output: [
-    output(pkg.module, 'es'),
-    output(pkg.main, 'cjs'),
-    output(pkg.browser, 'umd'),
-    output(pkg.unpkg, 'umd', { plugins: [terser({ format: { comments: /^!/ } })] }),
-  ],
 };
+
+export default [
+  // JavaScript bundles: ESM, CJS, UMD and a minified UMD.
+  {
+    input: 'src/index.ts',
+    external,
+    plugins: [
+      scssInline(),
+      nodeResolve({ extensions: ['.ts', '.mjs', '.js', '.json'] }),
+      typescript({ tsconfig: './tsconfig.json' }),
+    ],
+    output: [
+      { ...base, file: pkg.module, format: 'es' },
+      { ...base, file: pkg.main, format: 'cjs' },
+      { ...base, file: pkg.browser, format: 'umd' },
+      { ...base, file: pkg.unpkg, format: 'umd', plugins: [terser({ format: { comments: /^!/ } })] },
+    ],
+  },
+  // A single bundled type-definition file generated from the TypeScript source.
+  {
+    input: 'src/index.ts',
+    external: [...external, /\.scss$/],
+    plugins: [dts()],
+    output: { file: pkg.types, format: 'es', banner },
+  },
+];
