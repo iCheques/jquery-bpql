@@ -344,6 +344,21 @@ the single bundled declaration file). The loader stylesheet
 ([`src/styles.scss`](src/styles.scss)) is compiled and its images inlined as
 base64 at build time, so the overlay ships as a single self‑contained asset.
 
+## Releasing
+
+Releases are automated. From the repository's **Actions → Release** tab, run the
+workflow and pick a bump (`patch` / `minor` / `major`). The pipeline then:
+
+1. runs the full quality gate (build, typecheck, tests, lint),
+2. bumps the version (`npm version`),
+3. publishes to npm with [provenance](https://docs.npmjs.com/generating-provenance-statements) (`npm publish --provenance --access public`),
+4. pushes the version commit + tag and cuts a GitHub Release.
+
+**One-time setup:** add an `NPM_TOKEN` repository secret (an npm automation
+token with publish rights to the `@credithub` scope). If `master` is a protected
+branch the default token can't push to, also add a `RELEASE_TOKEN` secret (a PAT
+allowed to bypass the protection); the workflow prefers it for the push.
+
 ## License
 
 [MIT](LICENSE) © CreditHub. BPQL and BIPBOP are products of
