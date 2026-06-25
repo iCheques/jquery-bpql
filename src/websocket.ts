@@ -1,69 +1,85 @@
 import config from './config';
 import FREE_KEY from './free-key';
 
+export type BPQLMessageHandler = (message: unknown, event: MessageEvent) => void;
+export type BPQLConnectHandler = (socket: WebSocket) => void;
+
+/** The bound `send` function returned by `$.bpql.socket` / `BPQLSocket.open`. */
+export interface BPQLSend {
+  (data: unknown, onSend?: () => void): boolean;
+  socket: BPQLSocket;
+  close(): void;
+}
+
 /**
- * Thin, self-healing wrapper around the BIPBOP realtime WebSocket. It
+ * Thin, self-healing wrapper around the realtime BPQL WebSocket. It
  * authenticates on connect, queues messages sent while offline, and
  * transparently reconnects after `config.reconnectAfter` milliseconds.
- *
- * Prefer the {@link BPQLSocket.open} helper over `new BPQLSocket()` for the
- * common case.
  */
 export default class BPQLSocket {
+  apiKey: string;
+
+  private onMessage: BPQLMessageHandler | null;
+
+  private onConnect: BPQLConnectHandler | null;
+
+  private queue: Array<[unknown, (() => void) | undefined]> = [];
+
+  private ws: WebSocket | null = null;
+
+  private closedByUser = false;
+
   /**
    * Open a socket and return a `send` function bound to it. The returned
    * function also exposes `.socket` (the instance) and `.close()`.
-   *
-   * ```js
-   * const send = $.bpql.socket('YOUR_API_KEY', (message) => console.log(message));
-   * send({ query: "SELECT FROM 'INFO'.'INFO'" });
-   * // later: send.close();
-   * ```
-   *
-   * @param {string} [apiKey] API key.
-   * @param {function(*, MessageEvent): void} [onMessage] Message handler.
-   * @param {function(WebSocket): void} [onConnect] Connection handler.
-   * @returns {function(*, function=): boolean} Bound `send` function.
    */
-  static open(apiKey, onMessage, onConnect) {
+  static open(
+    apiKey?: string,
+    onMessage?: BPQLMessageHandler,
+    onConnect?: BPQLConnectHandler,
+  ): BPQLSend {
     const socket = new BPQLSocket(apiKey, onMessage, onConnect);
-    const send = (...args) => socket.send(...args);
+    const send = ((data: unknown, onSend?: () => void) => socket.send(data, onSend)) as BPQLSend;
     send.socket = socket;
     send.close = () => socket.close();
     return send;
   }
 
-  constructor(apiKey = FREE_KEY, onMessage = null, onConnect = null) {
+  constructor(
+    apiKey: string = FREE_KEY,
+    onMessage: BPQLMessageHandler | null = null,
+    onConnect: BPQLConnectHandler | null = null,
+  ) {
     this.apiKey = apiKey;
     this.onMessage = onMessage;
     this.onConnect = onConnect;
-    this.queue = [];
-    this.ws = null;
-    this.closedByUser = false;
     this.connect();
   }
 
-  connect() {
+  private connect(): void {
     const ws = new WebSocket(config.websocketAddress);
     this.ws = ws;
 
     ws.onopen = () => {
       ws.send(JSON.stringify(this.apiKey));
       while (this.queue.length) {
-        this.send(...this.queue.shift());
+        const next = this.queue.shift();
+        if (next) {
+          this.send(next[0], next[1]);
+        }
       }
       if (this.onConnect) {
         this.onConnect(ws);
       }
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = (event: MessageEvent) => {
       if (!this.onMessage || !event.data) {
         return;
       }
-      let payload;
+      let payload: unknown;
       try {
-        payload = JSON.parse(event.data);
+        payload = JSON.parse(event.data as string);
       } catch {
         payload = event.data;
       }
@@ -83,11 +99,9 @@ export default class BPQLSocket {
    * Send a payload. Buffered until the socket is open. Passing a string swaps
    * the API key used for (re)authentication.
    *
-   * @param {*} data Payload to send (serialized as JSON).
-   * @param {Function} [onSend] Invoked once the payload is flushed.
-   * @returns {boolean} `true` if sent immediately, `false` if queued.
+   * @returns `true` if sent immediately, `false` if queued.
    */
-  send(data, onSend) {
+  send(data: unknown, onSend?: () => void): boolean {
     if (typeof data === 'string') {
       this.apiKey = data;
     }
@@ -103,7 +117,7 @@ export default class BPQLSocket {
   }
 
   /** Close the socket and stop the auto-reconnect loop. */
-  close() {
+  close(): void {
     this.closedByUser = true;
     if (this.ws) {
       this.ws.close();

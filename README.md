@@ -1,17 +1,18 @@
 <div align="center">
 
-# jquery-bpql
+# @credithub/jquery-bpql
 
-**A tiny, modern jQuery plugin for talking to [BPQL](https://www.bipbop.com.br) — the SQL‑flavored query language created by BIPBOP.**
+**A tiny, _typed_ jQuery 4 plugin for talking to [BPQL](https://www.bipbop.com.br) — the SQL‑flavored query language created by BIPBOP and used by CreditHub.**
 
-[![npm version](https://img.shields.io/npm/v/jquery-bpql.svg)](https://www.npmjs.com/package/jquery-bpql)
+[![npm version](https://img.shields.io/npm/v/@credithub/jquery-bpql.svg)](https://www.npmjs.com/package/@credithub/jquery-bpql)
 [![CI](https://github.com/icheques/jquery-bpql/actions/workflows/ci.yml/badge.svg)](https://github.com/icheques/jquery-bpql/actions/workflows/ci.yml)
 [![jQuery 4 ready](https://img.shields.io/badge/jQuery-3%20%7C%204-0769AD.svg?logo=jquery&logoColor=white)](https://jquery.com/)
+[![Written in TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 </div>
 
-```js
+```ts
 $.bpql("SELECT FROM 'PLACA'.'CONSULTA'", "YOUR_API_KEY", {
   parameters: { placa: "ABC1234" },
   success(doc) {
@@ -25,9 +26,10 @@ $.bpql("SELECT FROM 'PLACA'.'CONSULTA'", "YOUR_API_KEY", {
 ## What is BPQL?
 
 **BPQL** (BIPBOP Query Language) is a small, SQL‑like language used to query the
-many data sources exposed by [BIPBOP](https://www.bipbop.com.br) and the systems
-built on top of it. Instead of memorizing one REST endpoint per data source, you
-write a single statement that targets a **database** and a **table**:
+many data sources exposed by [BIPBOP](https://www.bipbop.com.br) — and by
+platforms built on it, like **CreditHub**. Instead of memorizing one REST
+endpoint per data source, you write a single statement that targets a
+**database** and a **table**:
 
 ```sql
 SELECT FROM 'DATABASE'.'TABLE'
@@ -49,41 +51,43 @@ answers with a predictable XML envelope:
 </BPQL>
 ```
 
-`jquery-bpql` wraps that request/response cycle in a one‑line jQuery call,
-parses errors for you, and ships a realtime WebSocket transport for PUSH streams.
+`@credithub/jquery-bpql` wraps that request/response cycle in a one‑line jQuery
+call, parses errors for you, and ships a realtime WebSocket transport for PUSH
+streams — all fully typed.
 
 ## Highlights
 
 - 🎯 **One call, any data source** — `$.bpql(query, apiKey, options)` returns a
   standard jQuery [`jqXHR`](https://api.jquery.com/jquery.ajax/), so `.done()`,
   `.fail()`, `async/await` and friends all just work.
+- 🟦 **Written in TypeScript** — strict types throughout; the bundled
+  declarations augment `JQueryStatic`, so `$.bpql` is typed out of the box.
 - 🧩 **Named parameters** — pass BPQL parameters as a plain object.
 - 🛰️ **Realtime** — `$.bpql.socket()` opens a self‑healing, auto‑reconnecting
   WebSocket for PUSH notifications.
 - 🚨 **First‑class error handling** — `$.bpql.assert()` / `$.bpql.exception()`
-  turn the BPQL `<exception>` envelope into a tidy JS object.
+  turn the BPQL `<exception>` envelope into a tidy object.
 - ⚡ **jQuery 4 ready** — modern ESM/CJS/UMD builds, no legacy polyfills, tested
   against jQuery 4 (and still compatible with 3.x).
 - 🪶 **Zero runtime dependencies** — only jQuery, declared as a peer dependency.
-- 🤖 **Optional loading overlay** — the classic BIPBOP robot, fully optional and
+- 🤖 **Optional loading overlay** — the classic robot, fully optional and
   customizable.
-- 🟦 **Typed** — ships hand‑written TypeScript definitions.
 
 ## Installation
 
 ```bash
-npm install jquery-bpql jquery
+npm install @credithub/jquery-bpql jquery
 ```
 
 Or drop it in straight from a CDN (after jQuery):
 
 ```html
 <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jquery-bpql"></script>
+<script src="https://cdn.jsdelivr.net/npm/@credithub/jquery-bpql"></script>
 ```
 
-> **Note:** `jquery-bpql` uses `$.ajax`, so it needs the **full** jQuery build,
-> not the slim one.
+> **Note:** `@credithub/jquery-bpql` uses `$.ajax`, so it needs the **full**
+> jQuery build, not the slim one.
 
 ## Quick start
 
@@ -92,9 +96,9 @@ Or drop it in straight from a CDN (after jQuery):
 Importing the package registers everything on the jQuery namespace as a side
 effect:
 
-```js
+```ts
 import $ from "jquery";
-import "jquery-bpql";
+import "@credithub/jquery-bpql";
 
 const doc = await $.bpql("SELECT FROM 'INFO'.'INFO'");
 console.log($(doc).find("BPQL > header > query").text());
@@ -102,15 +106,15 @@ console.log($(doc).find("BPQL > header > query").text());
 
 Prefer explicit imports? Every member is also a named export:
 
-```js
-import { bpql, assert, socket } from "jquery-bpql";
+```ts
+import { bpql, assert, socket } from "@credithub/jquery-bpql";
 ```
 
 ### As a `<script>` tag
 
 ```html
 <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jquery-bpql"></script>
+<script src="https://cdn.jsdelivr.net/npm/@credithub/jquery-bpql"></script>
 <script>
   $.bpql("SELECT FROM 'INFO'.'INFO'")
     .done((doc) => console.log(doc))
@@ -122,14 +126,14 @@ import { bpql, assert, socket } from "jquery-bpql";
 
 ### Running a query
 
-```js
+```ts
 $.bpql(query, apiKey, options);
 ```
 
 | Argument  | Type     | Default                      | Description                                  |
 | --------- | -------- | ---------------------------- | -------------------------------------------- |
 | `query`   | `string` | `SELECT FROM 'INFO'.'INFO'`  | The BPQL statement to execute.               |
-| `apiKey`  | `string` | the public demo key          | Your BIPBOP API key (see below).             |
+| `apiKey`  | `string` | the public demo key          | Your API key (see below).                    |
 | `options` | `object` | `{}`                         | jQuery.ajax settings + the extras below.     |
 
 `options` is a **superset of jQuery.ajax settings**, plus two BPQL‑specific keys:
@@ -141,7 +145,7 @@ $.bpql(query, apiKey, options);
 
 The key is optional — you can also use the `$.bpql(query, options)` shorthand:
 
-```js
+```ts
 $.bpql("SELECT FROM 'PLACA'.'CONSULTA'", {
   apiKey: "YOUR_API_KEY",
   parameters: { placa: "ABC1234" },
@@ -150,7 +154,7 @@ $.bpql("SELECT FROM 'PLACA'.'CONSULTA'", {
 
 ### Passing named parameters
 
-```js
+```ts
 $.bpql("SELECT FROM 'PLACA'.'CONSULTA'", "YOUR_API_KEY", {
   parameters: { placa: "ABC1234" },
 }).done((doc) => {
@@ -163,11 +167,10 @@ $.bpql("SELECT FROM 'PLACA'.'CONSULTA'", "YOUR_API_KEY", {
 
 The response is an XML `Document`, so traverse it with everyday jQuery:
 
-```js
+```ts
 const doc = await $.bpql("SELECT FROM 'INFO'.'INFO'");
-const $doc = $(doc);
 
-$doc.find("BPQL > body *").each(function () {
+$(doc).find("BPQL > body *").each(function () {
   console.log(this.tagName, $(this).text());
 });
 ```
@@ -177,7 +180,7 @@ $doc.find("BPQL > body *").each(function () {
 BPQL reports business errors inside the document (the HTTP status is often still
 `200`). Use the helpers to detect them:
 
-```js
+```ts
 const doc = await $.bpql("SELECT FROM 'PLACA'.'CONSULTA'", "KEY", {
   parameters: { placa: "INVALID" },
 });
@@ -194,7 +197,7 @@ if (error) {
 }
 ```
 
-`$.bpql.exception(doc)` returns:
+`$.bpql.exception(doc)` returns a typed `BPQLException | null`:
 
 ```ts
 {
@@ -209,17 +212,16 @@ if (error) {
 ### Getting an API key
 
 A public, heavily rate‑limited demo key is used when you don't pass one — great
-for experimenting, not for production. Grab your own free key at
-**[api.bipbop.com.br](https://api.bipbop.com.br)** and pass it as the second
-argument (or as `options.apiKey`). The demo key is also exposed as
-`$.bpql.FREE_KEY`.
+for experimenting, not for production. Grab your own key from your
+BIPBOP/CreditHub account and pass it as the second argument (or as
+`options.apiKey`). The demo key is also exposed as `$.bpql.FREE_KEY`.
 
 ### GET, POST and JSONP
 
 By default requests are sent as `GET` with `dataType: "xml"`. Override anything
 through `options`:
 
-```js
+```ts
 // POST (handy for large queries / many parameters)
 $.bpql("SELECT FROM 'PLACA'.'CONSULTA'", "KEY", {
   method: "POST",
@@ -233,11 +235,11 @@ $.bpql("SELECT FROM 'INFO'.'INFO'", "KEY", { dataType: "jsonp" });
 
 ### The loading overlay
 
-While a request is in flight, `jquery-bpql` shows the classic BIPBOP robot
-overlay. It is reference‑counted (one overlay for any number of concurrent
-requests) and completely optional.
+While a request is in flight, the plugin shows a robot overlay. It is
+reference‑counted (one overlay for any number of concurrent requests) and
+completely optional.
 
-```js
+```ts
 // Disable it globally
 $.bpql.defaults.automaticLoader = false;
 
@@ -247,7 +249,7 @@ $.bpql.defaults.loader = $('<div class="my-spinner">Loading…</div>');
 
 ### Realtime (WebSocket / PUSH)
 
-```js
+```ts
 const send = $.bpql.socket("YOUR_API_KEY", (message, event) => {
   console.log("realtime message:", message);
 });
@@ -262,9 +264,9 @@ send.close();
 
 Point the client at a different host (sandbox, on‑prem…) at runtime:
 
-```js
-$.bpql.config.webserviceAddress = "https://my-host.example/";
-$.bpql.config.websocketAddress  = "wss://my-host.example/ws";
+```ts
+$.bpql.config.webserviceAddress = "https://irql.credithub.com.br/";
+$.bpql.config.websocketAddress  = "wss://irql.credithub.com.br/ws";
 $.bpql.config.reconnectAfter    = 5000; // ms before a dropped socket retries
 ```
 
@@ -274,7 +276,7 @@ $.bpql.config.reconnectAfter    = 5000; // ms before a dropped socket retries
 | ------------------------------ | ---------------------------------------------------------------------- |
 | `$.bpql(query, apiKey?, opts?)`| Run a BPQL query. Returns a jQuery `jqXHR`.                             |
 | `$.bpql.assert(doc, cb?)`      | `true` when `doc` carries a BPQL exception; invokes `cb` if so.         |
-| `$.bpql.exception(doc)`        | Parsed exception object, or `null`.                                     |
+| `$.bpql.exception(doc)`        | Parsed `BPQLException`, or `null`.                                      |
 | `$.bpql.socket(key?, onMsg?, onOpen?)` | Open a realtime WebSocket; returns a bound `send` function.    |
 | `$.bpql.config`                | `{ webserviceAddress, websocketAddress, reconnectAfter }`.              |
 | `$.bpql.defaults`              | `{ loader, automaticLoader }`.                                         |
@@ -282,20 +284,24 @@ $.bpql.config.reconnectAfter    = 5000; // ms before a dropped socket retries
 | `$.bpql.Socket`                | The underlying `BPQLSocket` class, for advanced use.                    |
 
 All of the above are also available as named ES exports
-(`import { bpql, assert, exception, socket, config, defaults, FREE_KEY, BPQLSocket } from "jquery-bpql"`).
+(`import { bpql, assert, exception, socket, config, defaults, FREE_KEY, BPQLSocket } from "@credithub/jquery-bpql"`),
+along with every type (`BPQLStatic`, `BPQLRequestOptions`, `BPQLException`, …).
 
 ## TypeScript
 
-Type definitions ship with the package and augment the global `JQueryStatic`
-interface, so `$.bpql` is fully typed out of the box — no `@types` package
-needed.
+The package is written in TypeScript and ships a single bundled declaration file
+that **augments the global `JQueryStatic` interface**, so `$.bpql` is fully typed
+with no extra setup:
 
 ```ts
-import "jquery-bpql";
+import "@credithub/jquery-bpql";
 
 const doc: Document = await $.bpql("SELECT FROM 'INFO'.'INFO'");
 const error = $.bpql.exception(doc); // BPQLException | null
 ```
+
+The types build on the standard jQuery typings. If you write TypeScript, make
+sure `@types/jquery` is installed (it's declared as an optional peer dependency).
 
 ## Compatibility
 
@@ -307,10 +313,11 @@ const error = $.bpql.exception(doc); // BPQLException | null
 Declared as a peer dependency: `jquery@>=3.0.0 <5.0.0`. Requires the full jQuery
 build (the plugin relies on `$.ajax`).
 
-## Upgrading from `jquery-bipbop`
+## Upgrading from `jquery-bipbop` / `jquery-bpql`
 
-`jquery-bpql` is the modernized successor of `jquery-bipbop`. The old names are
-kept as aliases, so existing code keeps working:
+This package is the modernized, TypeScript successor of `jquery-bipbop`. The old
+names are kept as aliases, so existing code keeps working after you switch the
+install to `@credithub/jquery-bpql`:
 
 | Legacy               | Preferred           |
 | -------------------- | ------------------- |
@@ -318,28 +325,27 @@ kept as aliases, so existing code keeps working:
 | `$.bipbopAssert(...)`| `$.bpql.assert(...)`|
 | `$.bipbopDefaults`   | `$.bpql.defaults`   |
 
-What changed under the hood: the `object-assign` and `one-time` runtime
-dependencies were dropped in favor of native APIs, the loader is now lazy and
-reference‑counted, the build moved to Rollup 4 + Dart Sass (ESM/CJS/UMD output),
-and the whole thing is typed and covered by a jQuery 4 test suite.
+The default endpoint is now `irql.credithub.com.br`; override `$.bpql.config` if
+you need a different host.
 
 ## Development
 
 ```bash
 npm install      # install dev dependencies
-npm run build    # bundle src/ → dist/ (ESM, CJS, UMD + minified)
+npm run build    # bundle src/ → dist/ (ESM, CJS, UMD + minified, and .d.ts)
 npm test         # run the jQuery 4 smoke tests (node:test + jsdom)
-npm run lint     # ESLint (flat config)
-npm run typecheck# validate the TypeScript definitions
+npm run lint     # ESLint (flat config, typescript-eslint)
+npm run typecheck# tsc --noEmit
 ```
 
-Source lives in [`src/`](src); the published bundles in `dist/` are generated by
-the build. The loader stylesheet ([`src/styles.scss`](src/styles.scss)) is
-compiled and its images inlined as base64 at build time, so the overlay ships as
-a single self‑contained asset.
+TypeScript source lives in [`src/`](src); the published bundles in `dist/` are
+generated by Rollup (`@rollup/plugin-typescript` for JS, `rollup-plugin-dts` for
+the single bundled declaration file). The loader stylesheet
+([`src/styles.scss`](src/styles.scss)) is compiled and its images inlined as
+base64 at build time, so the overlay ships as a single self‑contained asset.
 
 ## License
 
-[MIT](LICENSE) © BIPBOP. BPQL and BIPBOP are products of
+[MIT](LICENSE) © CreditHub. BPQL and BIPBOP are products of
 [BIPBOP](https://www.bipbop.com.br); see [api.bipbop.com.br](https://api.bipbop.com.br)
 for the full API catalog and Portuguese documentation.

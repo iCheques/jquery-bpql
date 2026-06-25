@@ -2,27 +2,30 @@ import jquery from 'jquery';
 import once from './once';
 import styles from './styles.scss';
 
+/** Loader preferences used by `$.bpql`. */
+export interface BPQLDefaults {
+  /** Element shown while a request is in flight (defaults to the robot). */
+  loader: JQuery | null;
+  /** Whether `$.bpql` shows the loader automatically. */
+  automaticLoader: boolean;
+}
+
 let stylesInjected = false;
 
 /** Inject the loader stylesheet once, the first time a loader is rendered. */
-function injectStyles() {
+function injectStyles(): void {
   if (stylesInjected) {
     return;
   }
   stylesInjected = true;
-  jquery('<style>')
-    .attr('data-jquery-bpql', '')
-    .text(styles)
-    .appendTo('head');
+  jquery('<style>').attr('data-jquery-bpql', '').text(styles).appendTo('head');
 }
 
 /**
- * Build the default BIPBOP "robot" loader element. Created lazily so importing
- * the library has no side effects on the DOM (safe for SSR/bundling).
- *
- * @returns {JQuery} Detached loader element.
+ * Build the default robot loader element. Created lazily so importing the
+ * library has no side effects on the DOM (safe for SSR/bundling).
  */
-function buildLoader() {
+function buildLoader(): JQuery {
   injectStyles();
 
   const container = jquery('<div>', { class: 'bipbop-loader' });
@@ -43,32 +46,22 @@ function buildLoader() {
   return container;
 }
 
-/**
- * Global loader preferences.
- *
- * @namespace defaults
- * @property {JQuery|null} loader   Element shown while a request is in flight.
- *   Defaults to the BIPBOP robot (built on first use). Assign your own jQuery
- *   element to fully customize it.
- * @property {boolean} automaticLoader Whether `$.bpql` shows the loader
- *   automatically. Set to `false` to opt out globally.
- */
-export const defaults = {
+/** Global loader preferences (see {@link BPQLDefaults}). */
+export const defaults: BPQLDefaults = {
   loader: null,
   automaticLoader: true,
 };
 
 /**
  * Reference-counted controller so concurrent requests share a single overlay
- * and the loader is only removed once the last request settles.
+ * and it is only removed once the last request settles.
  */
 class LoaderController {
-  constructor() {
-    this.count = 0;
-    this.element = null;
-  }
+  private count = 0;
 
-  show() {
+  private element: JQuery | null = null;
+
+  show(): () => void {
     this.count += 1;
     if (this.count === 1) {
       if (!defaults.loader) {
@@ -80,7 +73,7 @@ class LoaderController {
     return once(() => this.hide());
   }
 
-  hide() {
+  hide(): void {
     if (this.count === 0) {
       return;
     }
@@ -96,28 +89,25 @@ const controller = new LoaderController();
 
 /**
  * Decorate jQuery.ajax settings so the loader is shown on `beforeSend` and
- * dismissed on `complete`, while preserving any handlers the caller supplied.
- * Honors `defaults.automaticLoader`.
- *
- * @param {Object} settings jQuery.ajax settings.
- * @returns {Object} New settings object (the input is left untouched).
+ * dismissed on `complete`, preserving any handlers the caller supplied. Honors
+ * `defaults.automaticLoader`. Returns a new object; the input is untouched.
  */
-export function attachLoader(settings) {
+export function attachLoader(settings: JQuery.AjaxSettings): JQuery.AjaxSettings {
   if (!defaults.automaticLoader) {
     return settings;
   }
 
   const { beforeSend, complete } = settings;
-  let dismiss = null;
+  let dismiss: (() => void) | null = null;
 
   return jquery.extend({}, settings, {
-    beforeSend(...args) {
+    beforeSend(this: unknown, ...args: unknown[]): unknown {
       dismiss = controller.show();
-      return beforeSend ? beforeSend.apply(this, args) : undefined;
+      return beforeSend ? (beforeSend as (...a: unknown[]) => unknown).apply(this, args) : undefined;
     },
-    complete(...args) {
+    complete(this: unknown, ...args: unknown[]): void {
       if (complete) {
-        complete.apply(this, args);
+        (complete as (...a: unknown[]) => unknown).apply(this, args);
       }
       if (dismiss) {
         dismiss();
