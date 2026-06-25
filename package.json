@@ -1,57 +1,86 @@
 {
-  "author": {
-    "name": "lf.amorim@bipbop.com.br"
+  "name": "jquery-bpql",
+  "version": "2.0.0",
+  "description": "Tiny jQuery 4 plugin for talking to BPQL, the SQL-flavored query language created by BIPBOP.",
+  "type": "module",
+  "main": "dist/jquery-bpql.cjs",
+  "module": "dist/jquery-bpql.esm.js",
+  "browser": "dist/jquery-bpql.umd.js",
+  "unpkg": "dist/jquery-bpql.umd.min.js",
+  "jsdelivr": "dist/jquery-bpql.umd.min.js",
+  "types": "types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./dist/jquery-bpql.esm.js",
+      "require": "./dist/jquery-bpql.cjs",
+      "default": "./dist/jquery-bpql.umd.js"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
   },
-  "browserslist": [
-    "< 1%"
+  "sideEffects": [
+    "./src/index.js",
+    "*.scss"
   ],
-  "dependencies": {
-    "jquery": "^3.4.1",
-    "one-time": "^1.0.0"
-  },
-  "directories": {
-    "test": "tests",
-    "lib": "lib"
-  },
-  "files": [],
-  "deprecated": false,
-  "description": "Library to make requests to BIPBOP simple again.",
-  "devDependencies": {
-    "@rollup/plugin-buble": "^0.21.1",
-    "@rollup/plugin-node-resolve": "^7.1.1",
-    "autoprefixer": "^9.7.4",
-    "eslint": "^6.8.0",
-    "eslint-config-airbnb-base": "^14.1.0",
-    "eslint-config-airbnb-es5": "^1.2.0",
-    "eslint-plugin-import": "^2.20.1",
-    "gulp": "^4.0.2",
-    "gulp-jsdoc3": "^2.0.0",
-    "lodash": "^4.17.15",
-    "node-sass": "^4.13.1",
-    "object-assign": "^4.1.1",
-    "postcss-base64": "^0.7.1",
-    "postcss-scss": "^2.0.0",
-    "rollup": "^2.1.0",
-    "rollup-plugin-cleanup": "^3.1.1",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-postcss": "^2.5.0"
+  "files": [
+    "dist",
+    "src",
+    "types",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "lint": "eslint src rollup.config.mjs eslint.config.mjs test",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test",
+    "prepare": "npm run build",
+    "prepack": "npm run build"
   },
   "keywords": [
+    "bpql",
     "bipbop",
+    "jquery",
+    "jquery-plugin",
+    "query-language",
+    "sql",
+    "xml",
+    "websocket",
     "api",
-    "jquery"
+    "irql"
+  ],
+  "author": "BIPBOP (https://www.bipbop.com.br)",
+  "contributors": [
+    "iCheques (https://github.com/icheques)"
   ],
   "license": "MIT",
-  "main": "index.js",
-  "browser": "browser.js",
-  "name": "bipbop",
+  "homepage": "https://github.com/icheques/jquery-bpql#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bipbop/jquery-bipbop.git"
+    "url": "git+https://github.com/icheques/jquery-bpql.git"
   },
-  "scripts": {
-    "prepack": "gulp pack:dist",
-    "pretest": "gulp pack:test"
+  "bugs": {
+    "url": "https://github.com/icheques/jquery-bpql/issues"
   },
-  "version": "1.1.2"
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "jquery": ">=3.0.0 <5.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "jquery": "^4.0.0",
+    "jsdom": "^26.0.0",
+    "rollup": "^4.28.1",
+    "sass": "^1.83.0",
+    "typescript": "^5.7.2"
+  }
 }
